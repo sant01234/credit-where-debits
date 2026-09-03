@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Runrate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper: #f6f4ec;
+  --paper-raised: #fcfbf6;
+  --paper-sunken: #efece1;
+  --ink: #17170f;
+  --ink-soft: #55523f;
+  --muted: #8b8770;
+  --line: #ddd6c1;
+  --line-strong: #c7bf9f;
+  --accent: #1f3a5f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2e8f0;
+  --focus: #1f3a5f;
+  --credit: #2a78d6;
+  --debit: #e34948;
+  --zero-mid: #f0efec;
+  --status-critical: #d03b3b;
+  --shadow: 0 1px 2px rgba(23,23,15,0.06), 0 8px 24px -12px rgba(23,23,15,0.18);
+  --radius: 10px;
+  --font-serif: "IBM Plex Serif", "Iowan Old Style", Georgia, serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper: #131310;
+    --paper-raised: #1b1b16;
+    --paper-sunken: #0d0d0a;
+    --ink: #f2efe3;
+    --ink-soft: #c7c2ab;
+    --muted: #8f8a72;
+    --line: #34331f;
+    --line-strong: #46442a;
+    --accent: #7ca4dd;
+    --accent-ink: #0d1522;
+    --accent-soft: #22344c;
+    --focus: #7ca4dd;
+    --credit: #3987e5;
+    --debit: #e66767;
+    --zero-mid: #383835;
+    --status-critical: #d03b3b;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper: #131310;
+  --paper-raised: #1b1b16;
+  --paper-sunken: #0d0d0a;
+  --ink: #f2efe3;
+  --ink-soft: #c7c2ab;
+  --muted: #8f8a72;
+  --line: #34331f;
+  --line-strong: #46442a;
+  --accent: #7ca4dd;
+  --accent-ink: #0d1522;
+  --accent-soft: #22344c;
+  --focus: #7ca4dd;
+  --credit: #3987e5;
+  --debit: #e66767;
+  --zero-mid: #383835;
+  --status-critical: #d03b3b;
+  --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+}
+
+*{ box-sizing: border-box; }
+[hidden]{ display: none !important; }
+html,body{ margin:0; padding:0; }
+body{
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1,h2,h3{ font-family: var(--font-serif); font-weight: 600; margin: 0; text-wrap: balance; }
+button, input, select{ font-family: inherit; font-size: inherit; color: inherit; }
+button{ cursor: pointer; }
+:focus-visible{ outline: 2px solid var(--focus); outline-offset: 2px; }
+.mono{ font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.app{ max-width: 1280px; margin: 0 auto; padding: 20px 24px 56px; }
+
+/* ---------- topbar ---------- */
+.topbar{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:24px;
+  flex-wrap: wrap; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line);
+}
+.brand-row{ display:flex; align-items:center; gap:14px; }
+.brand-eyebrow{ display:block; font-family: var(--font-mono); font-size:11px; letter-spacing:.09em; text-transform:uppercase; color: var(--muted); margin-bottom:4px; }
+.brand h1{ font-size: 28px; letter-spacing: -0.01em; }
+.theme-toggle{
+  border:1px solid var(--line-strong); background: var(--paper-raised); border-radius: 999px;
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.view-control{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.view-label{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color: var(--muted); }
+.segmented{ display:flex; border:1px solid var(--line-strong); border-radius: 8px; overflow:hidden; background: var(--paper-raised); }
+.segmented button{
+  border:none; background:transparent; color: var(--ink-soft); padding:7px 12px; font-size:12.5px;
+  border-right:1px solid var(--line); font-weight:500;
+}
+.segmented button:last-child{ border-right:none; }
+.segmented button.active{ background: var(--accent); color: var(--accent-ink); }
+.custom-days{ display:flex; align-items:center; gap:6px; }
+.custom-days input{
+  width:64px; padding:6px 8px; border:1px solid var(--line-strong); border-radius:6px; background: var(--paper-raised); color: var(--ink);
+}
+.custom-days span{ color: var(--muted); font-size:12.5px; }
+
+/* ---------- banner ---------- */
+.banner{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background: var(--accent-soft); border:1px solid var(--line); border-radius: var(--radius);
+  padding:10px 14px; font-size:12.5px; color: var(--ink-soft); margin-bottom: 20px;
+}
+.banner[hidden]{ display:none; }
+.linklike{ background:none; border:none; padding:0; color: var(--accent); text-decoration: underline; font-weight:600; }
+
+/* ---------- layout ---------- */
+.layout{ display:grid; grid-template-columns: 300px 1fr; gap: 22px; align-items:start; }
+@media (max-width: 880px){ .layout{ grid-template-columns: 1fr; } }
+
+.panel{
+  background: var(--paper-raised); border:1px solid var(--line); border-radius: var(--radius);
+  padding:16px 18px; margin-bottom:18px; box-shadow: var(--shadow);
+}
+.panel-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.panel-head h2{ font-size:16px; }
+.muted-note{ font-size:11.5px; color: var(--muted); }
+.count{ font-family: var(--font-mono); font-size:11.5px; color: var(--muted); }
+
+/* ---------- ledger (sidebar) ---------- */
+.ledger{ position:sticky; top:16px; }
+.item-form{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.type-toggle{ display:flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+.type-toggle button{
+  flex:1; border:none; padding:7px 0; background: var(--paper); color: var(--ink-soft); font-size:12.5px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:6px; border-right:1px solid var(--line);
+}
+.type-toggle button:last-child{ border-right:none; }
+.type-toggle button .dot{ width:7px; height:7px; border-radius:50%; }
+.type-toggle button[data-type="credit"] .dot{ background: var(--credit); }
+.type-toggle button[data-type="debit"] .dot{ background: var(--debit); }
+.type-toggle button.active[data-type="credit"]{ background: color-mix(in oklab, var(--credit) 16%, var(--paper-raised)); color: var(--ink); }
+.type-toggle button.active[data-type="debit"]{ background: color-mix(in oklab, var(--debit) 16%, var(--paper-raised)); color: var(--ink); }
+.item-form input, .item-form select{
+  width:100%; padding:8px 9px; border:1px solid var(--line-strong); border-radius:6px;
+  background: var(--paper); color: var(--ink);
+}
+.form-row{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+.form-row.three{ grid-template-columns: 1fr 1fr 1fr; }
+.field-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color: var(--muted); margin-bottom:3px; display:block; }
+.submit-btn{
+  margin-top:2px; background: var(--accent); color: var(--accent-ink); border:none; border-radius:7px;
+  padding:9px 0; font-weight:600; font-size:12.5px;
+}
+.ghost-btn{
+  width:100%; margin-top:10px; background:transparent; border:1px dashed var(--line-strong); color: var(--muted);
+  border-radius:7px; padding:8px 0; font-size:12px;
+}
+.item-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; }
+.item-row{
+  display:flex; align-items:center; gap:8px; padding:7px 8px; border:1px solid var(--line); border-radius:7px; background: var(--paper);
+}
+.item-row .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.item-row[data-type="credit"] .dot{ background: var(--credit); }
+.item-row[data-type="debit"] .dot{ background: var(--debit); }
+.item-row .meta{ flex:1; min-width:0; }
+.item-row .name{ font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-row .sub{ font-size:10.5px; color: var(--muted); font-family: var(--font-mono); }
+.item-row .amt{ font-family: var(--font-mono); font-size:12px; white-space:nowrap; }
+.item-row button.del{
+  background:none; border:none; color: var(--muted); font-size:15px; line-height:1; padding:2px 4px; flex-shrink:0;
+}
+.item-row button.del:hover{ color: var(--debit); }
+.empty-state{ font-size:12px; color: var(--muted); padding:10px 2px; }
+
+/* ---------- tiles ---------- */
+.tiles{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:18px; }
+@media (max-width: 700px){ .tiles{ grid-template-columns: repeat(2, 1fr); } }
+.tile{
+  background: var(--paper-raised); border:1px solid var(--line); border-radius: var(--radius); padding:14px 16px;
+  box-shadow: var(--shadow);
+}
+.tile .label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color: var(--muted); margin-bottom:6px; }
+.tile .value{ font-family: var(--font-mono); font-size:22px; font-weight:500; letter-spacing:-0.01em; }
+.tile.credit .value{ color: var(--credit); }
+.tile.debit .value{ color: var(--debit); }
+.tile .sub{ font-size:11px; color: var(--muted); margin-top:4px; }
+
+/* ---------- breakdown table ---------- */
+.table-scroll{ overflow-x:auto; }
+table.breakdown-table{ width:100%; border-collapse:collapse; min-width:520px; }
+.breakdown-table th{
+  text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color: var(--muted);
+  font-weight:600; padding:0 8px 8px; border-bottom:1px solid var(--line-strong);
+}
+.breakdown-table th.num, .breakdown-table td.num{ text-align:right; }
+.breakdown-table td{ padding:8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.breakdown-table tr:last-child td{ border-bottom:none; }
+.bd-name{ display:flex; align-items:center; gap:8px; }
+.bd-name .dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.bd-name .dot.credit{ background: var(--credit); }
+.bd-name .dot.debit{ background: var(--debit); }
+.bd-amt{ font-family: var(--font-mono); }
+.bd-share-bar{ height:5px; border-radius:3px; background: var(--paper-sunken); overflow:hidden; margin-top:5px; width:100%; }
+.bd-share-bar > span{ display:block; height:100%; border-radius:3px; }
+.bd-share-bar > span.credit{ background: var(--credit); }
+.bd-share-bar > span.debit{ background: var(--debit); }
+tfoot td{ font-weight:600; border-top:2px solid var(--line-strong); border-bottom:none; padding-top:10px; }
+
+/* ---------- extrapolate ---------- */
+.extrap-controls{ display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; margin-bottom:16px; }
+.extrap-field label{ display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color: var(--muted); margin-bottom:4px; }
+.extrap-field input[type="number"], .extrap-field input[type="date"]{
+  padding:7px 9px; border:1px solid var(--line-strong); border-radius:6px; background: var(--paper); color: var(--ink); width:130px;
+}
+.check-field{ display:flex; align-items:center; gap:7px; padding-bottom:2px; }
+.check-field label{ font-size:12px; color: var(--ink-soft); }
+.shortfall-chip{
+  display:inline-flex; align-items:center; gap:6px; background: color-mix(in oklab, var(--status-critical) 14%, var(--paper-raised));
+  color: var(--status-critical); border:1px solid color-mix(in oklab, var(--status-critical) 40%, transparent);
+  padding:4px 10px; border-radius:999px; font-size:11.5px; font-weight:600; margin-left:auto;
+}
+.shortfall-chip svg{ width:12px; height:12px; flex-shrink:0; }
+
+.charts{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+@media (max-width: 760px){ .charts{ grid-template-columns: 1fr; } }
+.chart-card{ position:relative; }
+.chart-card h3{ font-size:12.5px; font-weight:600; margin-bottom:2px; color: var(--ink-soft); font-family: var(--font-sans); }
+.chart-card .chart-legend{ display:flex; gap:14px; font-size:11px; color: var(--muted); margin-bottom:6px; }
+.chart-legend .swatch{ display:inline-flex; align-items:center; gap:5px; }
+.chart-legend .swatch i{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+.chart-legend .swatch.credit i{ background: var(--credit); }
+.chart-legend .swatch.debit i{ background: var(--debit); }
+svg.chart{ width:100%; aspect-ratio: 560 / 210; height:auto; overflow:visible; display:block; }
+svg.chart text{ font-family: var(--font-mono); fill: var(--muted); }
+svg.chart .gridline{ stroke: var(--line); stroke-width:1; }
+svg.chart .baseline{ stroke: var(--line-strong); stroke-width:1; }
+svg.chart .cum-line{ fill:none; stroke: var(--ink-soft); stroke-width:2; stroke-linejoin:round; }
+svg.chart .hover-x{ stroke: var(--line-strong); stroke-width:1; stroke-dasharray:3 3; }
+.chart-tooltip{
+  position:absolute; pointer-events:none; background: var(--ink); color: var(--paper); font-family: var(--font-mono);
+  font-size:11px; padding:6px 9px; border-radius:6px; box-shadow: var(--shadow); transform: translate(-50%,-115%);
+  white-space:nowrap; opacity:0; transition: opacity .08s ease; z-index:5;
+}
+.chart-tooltip.show{ opacity:1; }
+.chart-tooltip .tt-label{ color: color-mix(in oklab, var(--paper) 65%, transparent); font-size:10px; margin-bottom:2px; }
+
+.assumptions{ font-size:11px; color: var(--muted); border-top:1px solid var(--line); padding-top:14px; margin-top:4px; }
+
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body data-palette="#2a78d6,#e34948">
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand-row">
+      <div>
+        <span class="brand-eyebrow">Corporate budgeting</span>
+        <h1>Runrate</h1>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle light/dark" aria-label="Toggle light/dark theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </button>
+    </div>
+    <div class="view-control">
+      <span class="view-label">View as</span>
+      <div class="segmented" id="freqSegmented">
+        <button data-freq="weekly">Weekly</button>
+        <button data-freq="fortnightly">Fortnightly</button>
+        <button data-freq="monthly" class="active">Monthly</button>
+        <button data-freq="quarterly">Quarterly</button>
+        <button data-freq="yearly">Yearly</button>
+        <button data-freq="custom">Custom</button>
+      </div>
+      <div class="custom-days" id="customDaysWrap" hidden>
+        <input type="number" id="viewCustomDays" min="1" value="10" />
+        <span>days</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="exampleBanner">
+    <span>Showing example figures for a small SaaS company &mdash; edit any line in the ledger, or</span>
+    <button class="linklike" id="clearAllBtn">clear all and start from scratch</button>
+  </div>
+
+  <main class="layout">
+    <aside class="ledger">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Ledger</h2>
+          <span class="count" id="itemCount"></span>
+        </div>
+        <form class="item-form" id="itemForm">
+          <div>
+            <label class="field-label" for="fName">Line item</label>
+            <input id="fName" type="text" placeholder="e.g. Cloud infrastructure" required />
+          </div>
+          <div class="type-toggle" id="typeToggle">
+            <button type="button" data-type="credit"><span class="dot"></span>Credit</button>
+            <button type="button" data-type="debit" class="active"><span class="dot"></span>Debit</button>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="field-label" for="fAmount">Amount ($)</label>
+              <input id="fAmount" type="number" min="0" step="0.01" placeholder="0.00" required />
+            </div>
+            <div>
+              <label class="field-label" for="fFreq">Per</label>
+              <select id="fFreq">
+                <option value="weekly">Week</option>
+                <option value="fortnightly">Fortnight</option>
+                <option value="monthly" selected>Month</option>
+                <option value="quarterly">Quarter</option>
+                <option value="yearly">Year</option>
+                <option value="custom">Custom days</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row three" id="itemCustomDaysRow" hidden>
+            <div>
+              <label class="field-label" for="fCustomDays">Days</label>
+              <input id="fCustomDays" type="number" min="1" value="10" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="field-label" for="fCategory">Category</label>
+              <input id="fCategory" type="text" placeholder="e.g. Payroll" />
+            </div>
+            <div>
+              <label class="field-label" for="fGrowth">Annual growth %</label>
+              <input id="fGrowth" type="number" step="0.1" value="0" />
+            </div>
+          </div>
+          <button type="submit" class="submit-btn">Add to ledger</button>
+        </form>
+        <ul class="item-list" id="itemList"></ul>
+        <button class="ghost-btn" id="resetExampleBtn">Reset to example data</button>
+      </div>
+    </aside>
+
+    <section class="main-col">
+      <div class="tiles" id="tiles"></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Breakdown</h2>
+          <span class="muted-note" id="breakdownNote"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Line item</th>
+                <th>Category</th>
+                <th class="num">Per view period</th>
+                <th class="num">Annualized</th>
+                <th class="num">Share</th>
+              </tr>
+            </thead>
+            <tbody id="breakdownBody"></tbody>
+            <tfoot id="breakdownFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Extrapolate</h2>
+        </div>
+        <div class="extrap-controls">
+          <div class="extrap-field">
+            <label for="horizonInput">Horizon (periods)</label>
+            <input type="number" id="horizonInput" min="2" max="60" value="12" />
+          </div>
+          <div class="extrap-field">
+            <label for="startDateInput">Starting</label>
+            <input type="date" id="startDateInput" />
+          </div>
+          <div class="check-field">
+            <input type="checkbox" id="growthToggle" checked />
+            <label for="growthToggle">Apply growth rates</label>
+          </div>
+          <div id="shortfallSlot"></div>
+        </div>
+        <div class="charts">
+          <div class="chart-card">
+            <h3>Net per period</h3>
+            <div class="chart-legend">
+              <span class="swatch credit"><i></i>Net positive</span>
+              <span class="swatch debit"><i></i>Net negative</span>
+            </div>
+            <svg class="chart" id="netChart" viewBox="0 0 560 210"></svg>
+            <div class="chart-tooltip" id="netTooltip"></div>
+          </div>
+          <div class="chart-card">
+            <h3>Cumulative balance</h3>
+            <div class="chart-legend">
+              <span class="swatch credit"><i></i>Above zero</span>
+              <span class="swatch debit"><i></i>Below zero</span>
+            </div>
+            <svg class="chart" id="cumChart" viewBox="0 0 560 210"></svg>
+            <div class="chart-tooltip" id="cumTooltip"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="assumptions">
+        Day-count basis: 365.25 days / year &middot; fortnight = 14 days &middot; month = 30.44 days &middot; quarter = 91.31 days.
+        Extrapolated figures compound any annual growth rate you set per line and are projections, not guarantees.
+      </footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var DAYS_PER_YEAR = 365.25;
+  var FREQ_LABEL = { weekly:"week", fortnightly:"fortnight", monthly:"month", quarterly:"quarter", yearly:"year", custom:"period" };
+
+  function periodsPerYear(freq, customDays){
+    if(freq === "custom") return DAYS_PER_YEAR / Math.max(1, customDays || 1);
+    return { weekly: DAYS_PER_YEAR/7, fortnightly: DAYS_PER_YEAR/14, monthly: 12, quarterly: 4, yearly: 1 }[freq];
+  }
+  function periodLengthDays(freq, customDays){
+    if(freq === "custom") return Math.max(1, customDays || 1);
+    return { weekly:7, fortnightly:14, monthly: DAYS_PER_YEAR/12, quarterly: DAYS_PER_YEAR/4, yearly: DAYS_PER_YEAR }[freq];
+  }
+  function toAnnual(amount, freq, customDays){ return amount * periodsPerYear(freq, customDays); }
+  function fromAnnual(annual, freq, customDays){ return annual / periodsPerYear(freq, customDays); }
+  function addDays(date, days){ var d = new Date(date.getTime()); d.setDate(d.getDate() + Math.round(days)); return d; }
+  function uid(){ return "i" + Math.random().toString(36).slice(2, 10); }
+
+  function fmtMoney(n, opts){
+    opts = opts || {};
+    var abs = Math.abs(n);
+    var sign = n < 0 ? "-" : "";
+    var digits = opts.compact ? 0 : 2;
+    if(opts.compact && abs >= 1000){
+      var units = [ [1e9,"B"], [1e6,"M"], [1e3,"k"] ];
+      for(var i=0;i<units.length;i++){
+        if(abs >= units[i][0]){
+          return sign + "$" + (abs/units[i][0]).toFixed(abs/units[i][0] >= 100 ? 0 : 1) + units[i][1];
+        }
+      }
+    }
+    return sign + "$" + abs.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  function periodLabel(freq, date, customDays){
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    if(freq === "monthly") return months[date.getMonth()] + " " + date.getFullYear();
+    if(freq === "quarterly") return "Q" + (Math.floor(date.getMonth()/3)+1) + " " + date.getFullYear();
+    if(freq === "yearly") return "FY" + date.getFullYear();
+    if(freq === "weekly") return "Wk " + months[date.getMonth()] + " " + date.getDate();
+    if(freq === "fortnightly") return "Fn " + months[date.getMonth()] + " " + date.getDate();
+    return months[date.getMonth()] + " " + date.getDate() + " (+" + customDays + "d)";
+  }
+
+  var EXAMPLE_ITEMS = [
+    { id: uid(), name: "Product subscriptions", type: "credit", amount: 44000, frequency: "monthly", customDays: 10, category: "Recurring revenue", growth: 9 },
+    { id: uid(), name: "Enterprise contracts", type: "credit", amount: 180000, frequency: "quarterly", customDays: 10, category: "Contracts", growth: 11 },
+    { id: uid(), name: "Payroll & benefits", type: "debit", amount: 72000, frequency: "monthly", customDays: 10, category: "Payroll", growth: 3 },
+    { id: uid(), name: "Cloud infrastructure", type: "debit", amount: 2800, frequency: "weekly", customDays: 10, category: "Opex", growth: 8 },
+    { id: uid(), name: "Office lease", type: "debit", amount: 9500, frequency: "monthly", customDays: 10, category: "Facilities", growth: 2 },
+    { id: uid(), name: "Marketing spend", type: "debit", amount: 11000, frequency: "monthly", customDays: 10, category: "Marketing", growth: -4 },
+    { id: uid(), name: "Software licenses", type: "debit", amount: 1200, frequency: "fortnightly", customDays: 10, category: "Opex", growth: 1 }
+  ];
+
+  var STORE_KEY = "runrate.items.v1";
+  var EXAMPLE_FLAG_KEY = "runrate.isExample.v1";
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(raw) return { items: JSON.parse(raw), isExample: localStorage.getItem(EXAMPLE_FLAG_KEY) === "1" };
+    }catch(e){}
+    return { items: EXAMPLE_ITEMS.slice(), isExample: true };
+  }
+  function saveState(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(state.items));
+      localStorage.setItem(EXAMPLE_FLAG_KEY, state.isExample ? "1" : "0");
+    }catch(e){}
+  }
+
+  var state = loadState();
+  var view = { freq: "monthly", customDays: 10 };
+  var extrap = { horizon: 12, startDate: new Date(), applyGrowth: true };
+
+  var els = {
+    banner: document.getElementById("exampleBanner"),
+    clearAllBtn: document.getElementById("clearAllBtn"),
+    resetExampleBtn: document.getElementById("resetExampleBtn"),
+    itemList: document.getElementById("itemList"),
+    itemCount: document.getElementById("itemCount"),
+    itemForm: document.getElementById("itemForm"),
+    typeToggle: document.getElementById("typeToggle"),
+    fFreq: document.getElementById("fFreq"),
+    itemCustomDaysRow: document.getElementById("itemCustomDaysRow"),
+    fCustomDays: document.getElementById("fCustomDays"),
+    freqSegmented: document.getElementById("freqSegmented"),
+    customDaysWrap: document.getElementById("customDaysWrap"),
+    viewCustomDays: document.getElementById("viewCustomDays"),
+    tiles: document.getElementById("tiles"),
+    breakdownBody: document.getElementById("breakdownBody"),
+    breakdownFoot: document.getElementById("breakdownFoot"),
+    breakdownNote: document.getElementById("breakdownNote"),
+    horizonInput: document.getElementById("horizonInput"),
+    startDateInput: document.getElementById("startDateInput"),
+    growthToggle: document.getElementById("growthToggle"),
+    shortfallSlot: document.getElementById("shortfallSlot"),
+    netChart: document.getElementById("netChart"),
+    cumChart: document.getElementById("cumChart"),
+    netTooltip: document.getElementById("netTooltip"),
+    cumTooltip: document.getElementById("cumTooltip"),
+    themeToggle: document.getElementById("themeToggle")
+  };
+
+  var pendingType = "debit";
+
+  function fmtDateInput(d){
+    var m = ("0" + (d.getMonth()+1)).slice(-2);
+    var day = ("0" + d.getDate()).slice(-2);
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+  els.startDateInput.value = fmtDateInput(extrap.startDate);
+
+  els.typeToggle.addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-type]");
+    if(!btn) return;
+    pendingType = btn.dataset.type;
+    Array.prototype.forEach.call(els.typeToggle.querySelectorAll("button"), function(b){ b.classList.toggle("active", b === btn); });
+  });
+
+  els.fFreq.addEventListener("change", function(){
+    els.itemCustomDaysRow.hidden = els.fFreq.value !== "custom";
+  });
+
+  els.itemForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = document.getElementById("fName").value.trim();
+    var amount = parseFloat(document.getElementById("fAmount").value);
+    if(!name || !isFinite(amount) || amount < 0) return;
+    var item = {
+      id: uid(),
+      name: name,
+      type: pendingType,
+      amount: amount,
+      frequency: els.fFreq.value,
+      customDays: parseInt(els.fCustomDays.value, 10) || 10,
+      category: document.getElementById("fCategory").value.trim() || "Uncategorized",
+      growth: parseFloat(document.getElementById("fGrowth").value) || 0
+    };
+    state.items.push(item);
+    state.isExample = false;
+    saveState();
+    els.itemForm.reset();
+    document.getElementById("fFreq").value = "monthly";
+    els.itemCustomDaysRow.hidden = true;
+    pendingType = "debit";
+    Array.prototype.forEach.call(els.typeToggle.querySelectorAll("button"), function(b){ b.classList.toggle("active", b.dataset.type === "debit"); });
+    renderAll();
+  });
+
+  els.clearAllBtn.addEventListener("click", function(){
+    if(state.items.length && !confirm("Clear every line item from the ledger?")) return;
+    state.items = [];
+    state.isExample = false;
+    saveState();
+    renderAll();
+  });
+  els.resetExampleBtn.addEventListener("click", function(){
+    state.items = EXAMPLE_ITEMS.map(function(i){ return Object.assign({}, i, { id: uid() }); });
+    state.isExample = true;
+    saveState();
+    renderAll();
+  });
+
+  els.freqSegmented.addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-freq]");
+    if(!btn) return;
+    view.freq = btn.dataset.freq;
+    Array.prototype.forEach.call(els.freqSegmented.querySelectorAll("button"), function(b){ b.classList.toggle("active", b === btn); });
+    els.customDaysWrap.hidden = view.freq !== "custom";
+    renderAll();
+  });
+  els.viewCustomDays.addEventListener("input", function(){
+    view.customDays = parseInt(els.viewCustomDays.value, 10) || 1;
+    renderAll();
+  });
+  els.horizonInput.addEventListener("input", function(){
+    extrap.horizon = Math.max(2, Math.min(60, parseInt(els.horizonInput.value, 10) || 12));
+    renderAll();
+  });
+  els.startDateInput.addEventListener("change", function(){
+    var d = new Date(els.startDateInput.value + "T00:00:00");
+    if(!isNaN(d)) extrap.startDate = d;
+    renderAll();
+  });
+  els.growthToggle.addEventListener("change", function(){
+    extrap.applyGrowth = els.growthToggle.checked;
+    renderAll();
+  });
+
+  var storedTheme = (function(){ try{ return localStorage.getItem("runrate.theme"); }catch(e){ return null; } })();
+  if(storedTheme) document.documentElement.setAttribute("data-theme", storedTheme);
+  els.themeToggle.addEventListener("click", function(){
+    var current = document.documentElement.getAttribute("data-theme");
+    var isDark = current ? current === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = isDark ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try{ localStorage.setItem("runrate.theme", next); }catch(e){}
+  });
+
+  function removeItem(id){
+    state.items = state.items.filter(function(i){ return i.id !== id; });
+    state.isExample = false;
+    saveState();
+    renderAll();
+  }
+
+  function renderLedgerList(){
+    els.itemCount.textContent = state.items.length + (state.items.length === 1 ? " line" : " lines");
+    els.banner.hidden = !state.isExample;
+    els.itemList.innerHTML = "";
+    if(!state.items.length){
+      var empty = document.createElement("li");
+      empty.className = "empty-state";
+      empty.textContent = "No line items yet. Add your first credit or debit above.";
+      els.itemList.appendChild(empty);
+      return;
+    }
+    state.items.forEach(function(item){
+      var li = document.createElement("li");
+      li.className = "item-row";
+      li.dataset.type = item.type;
+      var freqTxt = item.frequency === "custom" ? ("/" + item.customDays + "d") : ("/" + FREQ_LABEL[item.frequency]);
+      li.innerHTML =
+        '<span class="dot"></span>' +
+        '<span class="meta"><div class="name">' + escapeHtml(item.name) + '</div>' +
+        '<div class="sub">' + escapeHtml(item.category) + (item.growth ? (" · " + (item.growth>0?"+":"") + item.growth + "%/yr") : "") + '</div></span>' +
+        '<span class="amt">' + fmtMoney(item.amount, {compact:true}) + freqTxt + '</span>' +
+        '<button class="del" title="Remove" aria-label="Remove ' + escapeHtml(item.name) + '">×</button>';
+      li.querySelector(".del").addEventListener("click", function(){ removeItem(item.id); });
+      els.itemList.appendChild(li);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  function computeCurrent(){
+    var rows = state.items.map(function(item){
+      var annual = toAnnual(item.amount, item.frequency, item.customDays);
+      var perView = fromAnnual(annual, view.freq, view.customDays);
+      return { item: item, annual: annual, perView: perView };
+    });
+    var credits = rows.filter(function(r){ return r.item.type === "credit"; });
+    var debits = rows.filter(function(r){ return r.item.type === "debit"; });
+    var totalCreditView = credits.reduce(function(s,r){ return s + r.perView; }, 0);
+    var totalDebitView = debits.reduce(function(s,r){ return s + r.perView; }, 0);
+    var totalCreditAnnual = credits.reduce(function(s,r){ return s + r.annual; }, 0);
+    var totalDebitAnnual = debits.reduce(function(s,r){ return s + r.annual; }, 0);
+    return { rows: rows, totalCreditView: totalCreditView, totalDebitView: totalDebitView, totalCreditAnnual: totalCreditAnnual, totalDebitAnnual: totalDebitAnnual };
+  }
+
+  function renderTiles(current){
+    var viewNoun = view.freq === "custom" ? (view.customDays + "-day period") : FREQ_LABEL[view.freq];
+    var net = current.totalCreditView - current.totalDebitView;
+    var annualNet = current.totalCreditAnnual - current.totalDebitAnnual;
+    els.tiles.innerHTML = "";
+    var tiles = [
+      { label: "Credits / " + viewNoun, value: fmtMoney(current.totalCreditView, {compact:true}), cls: "credit" },
+      { label: "Debits / " + viewNoun, value: fmtMoney(current.totalDebitView, {compact:true}), cls: "debit" },
+      { label: "Net / " + viewNoun, value: fmtMoney(net, {compact:true}), cls: net >= 0 ? "credit" : "debit" },
+      { label: "Run-rate (annualized net)", value: fmtMoney(annualNet, {compact:true}), cls: annualNet >= 0 ? "credit" : "debit", sub: fmtMoney(current.totalCreditAnnual - current.totalDebitAnnual) + " / yr exact" }
+    ];
+    tiles.forEach(function(t){
+      var div = document.createElement("div");
+      div.className = "tile " + t.cls;
+      div.innerHTML = '<div class="label">' + t.label + '</div><div class="value mono">' + t.value + '</div>' + (t.sub ? '<div class="sub">' + t.sub + '</div>' : '');
+      els.tiles.appendChild(div);
+    });
+  }
+
+  function renderBreakdown(current){
+    var viewNoun = view.freq === "custom" ? (view.customDays + "d period") : FREQ_LABEL[view.freq];
+    els.breakdownNote.textContent = state.items.length + " lines · shown per " + viewNoun;
+    var totalAbs = current.rows.reduce(function(s,r){ return s + Math.abs(r.perView); }, 0) || 1;
+    els.breakdownBody.innerHTML = "";
+    current.rows
+      .slice()
+      .sort(function(a,b){ return Math.abs(b.perView) - Math.abs(a.perView); })
+      .forEach(function(r){
+        var share = Math.abs(r.perView) / totalAbs * 100;
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td><div class="bd-name"><span class="dot ' + r.item.type + '"></span>' + escapeHtml(r.item.name) + '</div></td>' +
+          '<td>' + escapeHtml(r.item.category) + '</td>' +
+          '<td class="num bd-amt">' + fmtMoney(r.perView) + '</td>' +
+          '<td class="num bd-amt">' + fmtMoney(r.annual, {compact:true}) + '</td>' +
+          '<td class="num" style="min-width:110px"><span class="mono">' + share.toFixed(1) + '%</span><div class="bd-share-bar"><span class="' + r.item.type + '" style="width:' + share.toFixed(1) + '%"></span></div></td>';
+        els.breakdownBody.appendChild(tr);
+      });
+    var net = current.totalCreditView - current.totalDebitView;
+    els.breakdownFoot.innerHTML =
+      '<tr><td colspan="2">Net</td><td class="num bd-amt">' + fmtMoney(net) + '</td><td class="num bd-amt">' + fmtMoney(current.totalCreditAnnual - current.totalDebitAnnual, {compact:true}) + '</td><td></td></tr>';
+  }
+
+  function computeExtrapolation(){
+    var n = extrap.horizon;
+    var periods = [];
+    var cumulative = 0;
+    for(var p = 0; p < n; p++){
+      var periodStart = addDays(extrap.startDate, p * periodLengthDays(view.freq, view.customDays));
+      var elapsedYears = (p * periodLengthDays(view.freq, view.customDays)) / DAYS_PER_YEAR;
+      var credit = 0, debit = 0;
+      state.items.forEach(function(item){
+        var annual = toAnnual(item.amount, item.frequency, item.customDays);
+        if(extrap.applyGrowth && item.growth){
+          annual = annual * Math.pow(1 + item.growth/100, elapsedYears);
+        }
+        var perView = fromAnnual(annual, view.freq, view.customDays);
+        if(item.type === "credit") credit += perView; else debit += perView;
+      });
+      var net = credit - debit;
+      cumulative += net;
+      periods.push({ label: periodLabel(view.freq, periodStart, view.customDays), credit: credit, debit: debit, net: net, cumulative: cumulative });
+    }
+    return periods;
+  }
+
+  function renderShortfall(periods){
+    var dipsNegative = periods.some(function(p){ return p.cumulative < 0; });
+    els.shortfallSlot.innerHTML = "";
+    if(!dipsNegative) return;
+    var chip = document.createElement("span");
+    chip.className = "shortfall-chip";
+    chip.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3 L22 20 L2 20 Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg> Projected shortfall in horizon';
+    els.shortfallSlot.appendChild(chip);
+  }
+
+  function svgEl(tag, attrs){
+    var e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function drawNetChart(periods){
+    var svg = els.netChart;
+    svg.innerHTML = "";
+    var W = 560, H = 210, padL = 44, padR = 10, padT = 12, padB = 26;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var maxAbs = Math.max(1, Math.max.apply(null, periods.map(function(p){ return Math.abs(p.net); })));
+    var zeroY = padT + plotH/2;
+    var scale = (plotH/2) / (maxAbs * 1.15);
+    var n = periods.length;
+    var bw = Math.min(34, plotW / n * 0.6);
+    var step = plotW / n;
+
+    [1, 0.5, 0, -0.5, -1].forEach(function(f){
+      var y = zeroY - f * (plotH/2) / 1.15;
+      svg.appendChild(svgEl("line", { x1: padL, x2: W - padR, y1: y, y2: y, class: f === 0 ? "baseline" : "gridline" }));
+      if(f !== 0){
+        var t = svgEl("text", { x: padL - 6, y: y + 3, "text-anchor": "end", "font-size": 9 });
+        t.textContent = fmtMoney(f * maxAbs * 1.15, { compact: true });
+        svg.appendChild(t);
+      }
+    });
+
+    var labelEvery = Math.ceil(n / 7);
+    periods.forEach(function(p, i){
+      var cx = padL + step * i + step/2;
+      var h = Math.abs(p.net) * scale;
+      var y = p.net >= 0 ? zeroY - h : zeroY;
+      var rect = svgEl("rect", {
+        x: cx - bw/2, y: y, width: bw, height: Math.max(1.5, h), rx: 3,
+        fill: p.net >= 0 ? "var(--credit)" : "var(--debit)"
+      });
+      rect.addEventListener("mousemove", function(evt){ showTooltip(els.netTooltip, evt, p.label, fmtMoney(p.net) + " net"); });
+      rect.addEventListener("mouseleave", function(){ hideTooltip(els.netTooltip); });
+      svg.appendChild(rect);
+      if(shouldLabel(i, n, labelEvery)){
+        var lt = svgEl("text", { x: cx, y: H - 8, "text-anchor": "middle", "font-size": 9 });
+        lt.textContent = p.label;
+        svg.appendChild(lt);
+      }
+    });
+  }
+
+  function shouldLabel(i, n, labelEvery){
+    if(i === n - 1) return true;
+    if(i % labelEvery !== 0) return false;
+    var lastRegular = Math.floor((n-1) / labelEvery) * labelEvery;
+    return !(i === lastRegular && (n-1) - lastRegular < labelEvery);
+  }
+
+  function drawCumChart(periods){
+    var svg = els.cumChart;
+    svg.innerHTML = "";
+    var W = 560, H = 210, padL = 48, padR = 10, padT = 12, padB = 26;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var n = periods.length;
+    var vals = periods.map(function(p){ return p.cumulative; });
+    var maxV = Math.max.apply(null, vals.concat([0]));
+    var minV = Math.min.apply(null, vals.concat([0]));
+    var range = Math.max(1, maxV - minV) * 1.15;
+    var top = maxV + range * 0.075;
+    function yFor(v){ return padT + (top - v) / range * plotH; }
+    var zeroY = yFor(0);
+    var step = plotW / (n - 1 || 1);
+    function xFor(i){ return padL + step * i; }
+
+    [top, top - range/2, top - range].forEach(function(v){
+      var y = yFor(v);
+      svg.appendChild(svgEl("line", { x1: padL, x2: W - padR, y1: y, y2: y, class: "gridline" }));
+      var t = svgEl("text", { x: padL - 6, y: y + 3, "text-anchor": "end", "font-size": 9 });
+      t.textContent = fmtMoney(v, { compact: true });
+      svg.appendChild(t);
+    });
+    svg.appendChild(svgEl("line", { x1: padL, x2: W - padR, y1: zeroY, y2: zeroY, class: "baseline" }));
+
+    var posPts = [xFor(0) + "," + zeroY];
+    var negPts = [xFor(0) + "," + zeroY];
+    var linePts = [];
+    periods.forEach(function(p, i){
+      var x = xFor(i), y = yFor(p.cumulative);
+      linePts.push(x + "," + y);
+      posPts.push(x + "," + (p.cumulative >= 0 ? y : zeroY));
+      negPts.push(x + "," + (p.cumulative <= 0 ? y : zeroY));
+    });
+    posPts.push(xFor(n-1) + "," + zeroY);
+    negPts.push(xFor(n-1) + "," + zeroY);
+
+    svg.appendChild(svgEl("polygon", { points: posPts.join(" "), fill: "color-mix(in oklab, var(--credit) 22%, transparent)", stroke: "none" }));
+    svg.appendChild(svgEl("polygon", { points: negPts.join(" "), fill: "color-mix(in oklab, var(--debit) 22%, transparent)", stroke: "none" }));
+    svg.appendChild(svgEl("polyline", { points: linePts.join(" "), class: "cum-line" }));
+
+    var endR = svgEl("circle", { cx: xFor(n-1), cy: yFor(periods[n-1].cumulative), r: 4, fill: periods[n-1].cumulative >= 0 ? "var(--credit)" : "var(--debit)" });
+    svg.appendChild(endR);
+
+    var labelEvery = Math.ceil(n / 7);
+    periods.forEach(function(p, i){
+      if(shouldLabel(i, n, labelEvery)){
+        var lt = svgEl("text", { x: xFor(i), y: H - 8, "text-anchor": i === n-1 ? "end" : (i===0 ? "start" : "middle"), "font-size": 9 });
+        lt.textContent = p.label;
+        svg.appendChild(lt);
+      }
+    });
+
+    var hoverLine = svgEl("line", { x1: 0, x2: 0, y1: padT, y2: H - padB, class: "hover-x", opacity: 0 });
+    svg.appendChild(hoverLine);
+    var hitArea = svgEl("rect", { x: padL, y: padT, width: plotW, height: plotH, fill: "transparent" });
+    hitArea.addEventListener("mousemove", function(evt){
+      var rect = svg.getBoundingClientRect();
+      var relX = (evt.clientX - rect.left) / rect.width * W;
+      var idx = Math.max(0, Math.min(n - 1, Math.round((relX - padL) / step)));
+      var p = periods[idx];
+      hoverLine.setAttribute("x1", xFor(idx));
+      hoverLine.setAttribute("x2", xFor(idx));
+      hoverLine.setAttribute("opacity", 1);
+      showTooltip(els.cumTooltip, evt, p.label, fmtMoney(p.cumulative) + " cumulative");
+    });
+    hitArea.addEventListener("mouseleave", function(){ hoverLine.setAttribute("opacity", 0); hideTooltip(els.cumTooltip); });
+    svg.appendChild(hitArea);
+  }
+
+  function showTooltip(el, evt, label, value){
+    var card = el.closest(".chart-card");
+    var rect = card.getBoundingClientRect();
+    el.style.left = (evt.clientX - rect.left) + "px";
+    el.style.top = (evt.clientY - rect.top) + "px";
+    el.innerHTML = '<div class="tt-label">' + escapeHtml(label) + '</div>' + escapeHtml(value);
+    el.classList.add("show");
+  }
+  function hideTooltip(el){ el.classList.remove("show"); }
+
+  function renderAll(){
+    renderLedgerList();
+    var current = computeCurrent();
+    renderTiles(current);
+    renderBreakdown(current);
+    var periods = computeExtrapolation();
+    renderShortfall(periods);
+    drawNetChart(periods);
+    drawCumChart(periods);
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
